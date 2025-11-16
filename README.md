@@ -2,51 +2,200 @@
 
 
 
-For `helloService`, create `.env` file with the content:
-```bash
-PORT=3001
-```
+# Step 1: Version Control with Git
 
-For `profileService`, create `.env` file with the content:
-```bash
-PORT=3002
-MONGO_URL="specifyYourMongoURLHereWithDatabaseNameInTheEnd"
-```
+Fork the Repository
 
-Finally install packages in both the services by running the command `npm install`.
+Go to Main Repo (SampleMERNwithMicroservices).
 
-<br/>
-For frontend, you have to install and start the frontend server:
+Click "Fork" on GitHub. This creates a copy under your account.
 
-```bash
-cd frontend
-npm install
-npm start
-```
+Clone Your Fork
 
-Note: This will run the frontend in the development server. To run in production, build the application by running the command `npm run build`
+In your terminal:
 
-List of the steps followed to make this application containerized 
-
-Assumption and steps to follow for make it dockerize/kubenets/helm charts then CI CD for the same.
-1. using the mongo free cluster and use it details in the secret
-2. create ECR reporsitory for this application : 
-975050024946.dkr.ecr.eu-central-1.amazonaws.com/containerize-vijay-assignment/frontend
-975050024946.dkr.ecr.eu-central-1.amazonaws.com/containerize-vijay-assignment/helloservice
-975050024946.dkr.ecr.eu-central-1.amazonaws.com/containerize-vijay-assignment/profileservice
-
-3. added docker file for all the three components as per teh need.
- Docker login steps need to automate in the CI becuase its need to done manually as of now 
- aws ecr get-login-password --region eu-central-1 | docker login --username AWS --password-stdin 975050024946.dkr.ecr.eu-central-1.amazonaws.com
+bash
+git clone https://github.com/<your-username>/SampleMERNwithMicroservices
+cd SampleMERNwithMicroservices
 
 
-4. create the scripts to create the image and push it to the reposiroty
-bash  build-and-push.sh 975050024946.dkr.ecr.eu-central-1.amazonaws.com/containerize-vijay-assignment latest vijay
+# Step 2: Prepare the MERN Application
 
- 975050024946.dkr.ecr.eu-central-1.amazonaws.com/containerize-vijay-assignment/profileservice:latest
-975050024946.dkr.ecr.eu-central-1.amazonaws.com/containerize-vijay-assignment/helloservice:latest
-975050024946.dkr.ecr.eu-central-1.amazonaws.com/containerize-vijay-assignment/frontend:latest
+Containerize Each Component
 
-ECR creation command need to add in this 
+For backend and frontend:
 
-creating kubenerts manifest for the hello and profileservice
+Write separate Dockerfile for each.
+
+Example for backend:
+
+text
+FROM node:18
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+COPY . .
+EXPOSE 8080
+CMD ["npm", "start"]
+Do similar for frontend.
+
+Build Docker Images
+
+Backend:
+
+bash
+docker build -t backend:latest ./backend
+Frontend:
+
+bash
+docker build -t frontend:latest ./frontend
+Push Images to Amazon ECR
+
+Create ECR Repos
+
+bash
+aws ecr create-repository --repository-name backend
+aws ecr create-repository --repository-name frontend
+Authenticate Docker with ECR
+
+bash
+aws ecr get-login-password --region <region> | docker login --username AWS --password-stdin <aws_account_id>.dkr.ecr.<region>.amazonaws.com
+Tag and Push
+
+bash
+docker tag backend:latest <aws_account_id>.dkr.ecr.<region>.amazonaws.com/backend:latest
+docker push <aws_account_id>.dkr.ecr.<region>.amazonaws.com/backend:latest
+# Repeat for frontend
+
+
+# Step 3: AWS Environment Setup
+
+Install AWS CLI
+
+Windows/Mac/Linux
+
+Configure AWS CLI
+
+bash
+aws configure
+Input your AWS Access Key, Secret Access Key, region, and output format.
+
+# Step 4: Continuous Integration (CI) using Jenkins
+
+Set Up Jenkins
+
+Deploy EC2 instance (Ubuntu recommended).
+
+Install Java, then Jenkins:
+
+bash
+sudo apt update
+sudo apt install openjdk-21-jdk -y
+wget -q -O - https://pkg.jenkins.io/debian/jenkins.io.key | sudo apt-key add -
+sudo sh -c 'echo deb https://pkg.jenkins.io/debian binary/ > /etc/apt/sources.list.d/jenkins.list'
+sudo apt update
+sudo apt install jenkins -y
+Start and enable Jenkins:
+
+bash
+sudo systemctl start jenkins
+sudo systemctl enable jenkins
+Access at your provided Jenkins URL
+
+Log in with provided credentials.
+
+Configure Plugins
+
+Essential: Docker, AWS CLI, GitHub, Kubernetes, Blue Ocean (Pipeline visualization).
+
+Set Up Credentials
+
+Add AWS and DockerHub/GitHub credentials in Jenkins.
+
+Create Jenkins Pipelines
+
+Create Freestyle Jobs or Pipeline as Code.
+
+Pipeline tasks:
+
+Clone repo.
+
+Build Docker images.
+
+Push to ECR.
+
+Deploy to EKS via Helm (optional for CI/CD).
+
+Automatically trigger builds on commit (use GitHub webhooks).
+
+# Step 5: Kubernetes Deployment (EKS)
+
+Create an EKS Cluster
+
+Install eksctl:
+
+bash
+curl --location "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C /tmp
+sudo mv /tmp/eksctl /usr/local/bin
+Create cluster:
+
+bash
+eksctl create cluster --name streaming-app --region <region> --nodegroup-name standard-workers --node-type t3.medium --nodes 2
+Configure kubectl
+
+bash
+aws eks --region <region> update-kubeconfig --name streaming-app
+Package and Deploy with Helm
+
+Helm Install Guide
+
+Create Helm chart with values for backend/frontend images.
+
+Deploy:
+
+bash
+helm install streamingapp ./chart
+
+# Step 6: Monitoring and Logging
+
+CloudWatch Setup
+
+Install CloudWatch agent on EC2 (optional).
+
+In EKS, use Fluent Bit or similar DaemonSet to forward logs:
+
+Centralized Logging on EKS
+
+Metrics: set up CloudWatch Alarms for CPU, memory, failed builds, etc.
+
+Dashboards
+
+Use CloudWatch Dashboards for visualization.
+
+
+``Step 7: Final Validation``
+
+Check Frontend/Backend
+
+Both should be accessible (via LoadBalancer/public IP).
+
+Test with browser/Postman.
+
+Scaling Verification
+
+EKS: Increase/decrease replica counts (using kubectl scale).
+
+Application should handle scaling without downtime.
+
+
+# Sample Architecture Diagram Structure:
+
+
+[GitHub] --> [Jenkins CI] --> [ECR]
+                         |         |
+                         v         v
+                       [EKS Cluster] -- [Helm] --> [K8s Pods (Frontend/Backend)]
+                                             |
+                  [CloudWatch Monitoring & Logging] <---+
+                              |   |                     |
+                          [SNS Topics] ---> [Slack/Teams/Telegram]
