@@ -2,7 +2,7 @@
 
 
 
-# Step 1: Version Control with Git
+``Step 1: Version Control with Git``
 
 Fork the Repository
 
@@ -19,7 +19,7 @@ git clone https://github.com/<your-username>/SampleMERNwithMicroservices
 cd SampleMERNwithMicroservices
 
 
-# Step 2: Prepare the MERN Application
+``Step 2: Prepare the MERN Application``
 
 Containerize Each Component
 
@@ -68,7 +68,7 @@ docker push <aws_account_id>.dkr.ecr.<region>.amazonaws.com/backend:latest
 # Repeat for frontend
 
 
-# Step 3: AWS Environment Setup
+``Step 3: AWS Environment Setup``
 
 Install AWS CLI
 
@@ -80,7 +80,7 @@ bash
 aws configure
 Input your AWS Access Key, Secret Access Key, region, and output format.
 
-# Step 4: Continuous Integration (CI) using Jenkins
+``Step 4: Continuous Integration (CI) using Jenkins``
 
 Set Up Jenkins
 
@@ -128,7 +128,7 @@ Deploy to EKS via Helm (optional for CI/CD).
 
 Automatically trigger builds on commit (use GitHub webhooks).
 
-# Step 5: Kubernetes Deployment (EKS)
+``Step 5: Kubernetes Deployment (EKS)``
 
 Create an EKS Cluster
 
@@ -156,7 +156,7 @@ Deploy:
 bash
 helm install streamingapp ./chart
 
-# Step 6: Monitoring and Logging
+``Step 6: Monitoring and Logging``
 
 CloudWatch Setup
 
