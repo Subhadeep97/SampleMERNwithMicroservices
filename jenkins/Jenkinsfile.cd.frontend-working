@@ -1,0 +1,34 @@
+pipeline {
+  agent any
+  parameters {
+    string(name: 'IMAGE_TAG', defaultValue: 'latest', description: 'Image tag to deploy')
+  }
+  environment {
+    REGISTRY = "975050024946.dkr.ecr.eu-central-1.amazonaws.com/containerize-Subhadeep-assignment"
+    KUBECONFIG_FILE = 'Subhadeep-kubeconfig' // Jenkins file credential containing kubeconfig
+    RELEASE_NAME = 'Subhadeep-shopnow-frontend'
+    NAMESPACE = 'Subhadeep'
+    CHART_PATH = 'kubernetes/helm/frontend'
+  }
+  stages {
+    // here assumption the kubeconfig is already configured to point to the correct EKS cluster
+    stage('Checkout') { steps { checkout scm } }
+    stage('Deploy (Helm)') {
+      steps {
+        withCredentials([file(credentialsId: KUBECONFIG_FILE, variable: 'KUBECONFIG')]) {
+          sh '''
+            export KUBECONFIG=$KUBECONFIG
+            
+            helm upgrade --install ${RELEASE_NAME} ${CHART_PATH} \
+              --namespace ${NAMESPACE} --create-namespace \
+              --set image.repository=${REGISTRY}/frontend \
+              --set image.tag=${IMAGE_TAG} \
+              --wait --timeout 5m
+            kubectl rollout status deployment/${RELEASE_NAME} -n ${NAMESPACE} --timeout=3m
+          '''
+        }
+      }
+    }
+  }
+}
+
